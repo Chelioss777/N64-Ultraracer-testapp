@@ -24,10 +24,10 @@ jobs:
     - name: Build N64 ROM
       run: |
         make
-        
-    # 4. Das fertige ROM als Website-Download bereitstellen
+
+    # 4. Das fertige ROM als Website-Download bereitstellen (KORRIGIERT)
     - name: Upload N64 ROM Artifact
-      uses: actions/artifact@v4
+      uses: actions/upload-artifact@v4
       with:
         name: ultra-racer-rom
         path: ./*.z64
