@@ -8,7 +8,6 @@ on:
 jobs:
   build-rom:
     runs-on: ubuntu-latest
-    # Wir wechseln auf das aktive, funktionierende Community-Image der N64Brew-Organisation
     container: ghcr.io/n64brew/ubuntu-toolchain:latest
 
     steps:
@@ -17,8 +16,7 @@ jobs:
       uses: actions/checkout@v4
 
     # 2. Das Makefile im Container ausführen
-    # Wir übergeben den korrekten internen Pfad der Toolchain (/usr/local) an das System
-     Buchstabe  Build N64 ROM
+    - name: Build N64 ROM
       run: |
         make N64_INST=/usr/local
         
