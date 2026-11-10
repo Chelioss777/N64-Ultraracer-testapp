@@ -10,14 +10,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Quellcode laden
+    # 1. Quellcode aus deinem Repository laden
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # 2. Bauen mit dem verlässlichen Docker Hub Image
-    - name: Build ROM with Libdragon
-      run: |
-        docker run --rm -v "$PWD:/n64dev" -w /n64dev dragonminded/libdragon:latest make
+    # 2. Das offizielle Libdragon Bauwerkzeug für GitHub Actions ausführen
+    # Dieses Tool lädt die exakte Toolchain vollautomatisch im Hintergrund
+    - name: Build N64 ROM
+      uses: libdragon/action@v1
+      with:
+        actions: 'make'
 
     # 3. Das fertige ROM als Website-Download bereitstellen
     - name: Upload N64 ROM Artifact
