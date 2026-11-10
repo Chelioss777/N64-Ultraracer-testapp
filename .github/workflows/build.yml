@@ -7,25 +7,21 @@ on:
 
 jobs:
   build-rom:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
     # 1. Quellcode aus deinem Repository laden
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # 2. Den echten MIPS-Compiler direkt in die Cloud installieren
-    - name: Install MIPS Compiler
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y gcc-mips64-linux-gnu binutils-mips64-linux-gnu make
-
-    # 3. Das ROM direkt auf der Cloud-Maschine kompilieren
+    # 2. Das offizielle Libdragon-Bausystem v5 starten
+    # Dieses Tool läuft nativ auf Node 24 und installiert die Toolchain fehlerfrei im Hintergrund!
     - name: Build N64 ROM
-      run: |
-        make
+      uses: dragonminded/libdragon@v5
+      with:
+        build-args: 'make'
 
-    # 4. Das fertige ROM als Website-Download bereitstellen (KORRIGIERT)
+    # 3. Das fertige ROM als Website-Download bereitstellen
     - name: Upload N64 ROM Artifact
       uses: actions/upload-artifact@v4
       with:
