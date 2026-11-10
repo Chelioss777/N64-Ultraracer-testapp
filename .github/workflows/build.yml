@@ -1,0 +1,25 @@
+name: N64 ROM Build
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch: # Erlaubt es, den Build manuell per Knopfdruck zu starten
+
+jobs:
+  build-rom:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # Nutzt das offizielle, aktuelle Libdragon-Image in der unblockierten Cloud
+    - name: Build ROM with Libdragon
+      run: |
+        docker run --rm -v "$PWD:/n64dev" -w /n64dev ghcr.io/libdragon/libdragon:trunk make
+
+    - name: Upload N64 ROM Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ultra-racer-rom
+        path: ./*.z64

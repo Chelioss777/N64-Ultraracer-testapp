@@ -28,7 +28,8 @@ void reset_stats(int port) {
 int main(void) {
     // N64 Subsysteme initialisieren
     init_interrupts();
-    display_init(RESOLUTION_320x240, DEPTH_16_BPP, 3, GAMMA_NONE, FILTERS_RESAMPLE);
+    // Modernes Libdragon nutzt 2 Buffer für flüssige Grafikausgabe
+    display_init(RESOLUTION_320x240, DEPTH_16_BPP, 2, GAMMA_NONE, FILTERS_RESAMPLE);
     controller_init();
 
     // Statistiken für alle 4 Ports nullen
@@ -37,7 +38,10 @@ int main(void) {
     while(1) {
         controller_scan();
         
-        surface_t *disp = display_get();
+        // NEU: Holt die aktuelle Oberfläche und sperrt sie für sicheres Zeichnen
+        surface_t *disp = display_lock();
+        if (!disp) continue; // Falls kein Framebuffer bereit ist, Frame überspringen
+
         // Hintergrundfarbe: Dunkles Rennstrecken-Grau
         graphics_clear_screen(disp, RGBA32(34, 34, 34, 255));
 
@@ -50,8 +54,8 @@ int main(void) {
             int offsetX = (port % 2) * 160;
             int offsetY = (port / 2) * 105 + 30;
 
-            struct controller_data keys_down = get_keys_down();
-            struct controller_data held = get_keys_held();
+            // NEU: Richtige Abfrage der Controllerdaten für den jeweiligen Port im modernen Libdragon
+            struct controller_data cdata = controller_get_data(port);
 
             // Umrandung der Spieler-Boxen zeichnen
             graphics_draw_line(disp, offsetX, offsetY, offsetX + 155, offsetY, RGBA32(70, 70, 70, 255));
@@ -60,13 +64,14 @@ int main(void) {
             sprintf(port_label, "P%d", port + 1);
             graphics_draw_text(disp, offsetX + 5, offsetY + 5, port_label);
 
-            int8_t stick_x = (port == 0) ? held.c.x : 0; 
-            int8_t stick_y = (port == 0) ? held.c.y : 0;
+            // Analogstick-Werte für diesen Port auslesen
+            int8_t stick_x = cdata.c[0].x; 
+            int8_t stick_y = cdata.c[0].y;
 
             // =================================================================
-            // NEUES FEATURE: CONTROLLER RESET FÜR EVERDRIVE (L + R + Z + START)
+            // CONTROLLER RESET FÜR EVERDRIVE (L + R + Z + START)
             // =================================================================
-            if (held.c.L && held.c.R && held.c.Z && held.c.start) {
+            if (cdata.c[0].L && cdata.c[0].R && cdata.c[0].Z && cdata.c[0].start) {
                 // Löst den offiziellen N64-Hardware-Soft-Reset aus.
                 // Das Everdrive fängt dies ab und springt zurück ins Menü.
                 sys_reset(); 
@@ -79,12 +84,13 @@ int main(void) {
             if (stick_y < stats[port].min_y) stats[port].min_y = stick_y;
 
             // Reset der Werte, wenn START gedrückt wird
-            if ((port == 0 && keys_down.c.start)) {
+            // Nutzt keys_down-Logik über den pressed-Status im modernen Libdragon
+            if (cdata.c[0].start) {
                 reset_stats(port);
             }
 
             // FEATURE 2: RUMBLE PAK TEST LOGIK
-            if ((port == 0) && held.c.A && held.c.B) {
+            if (cdata.c[0].A && cdata.c[0].B) {
                 stats[port].rumble_active = true;
                 stats[port].rumble_timer = 30;
             }
@@ -119,17 +125,15 @@ int main(void) {
 
             // Tastenliste
             int btnY = offsetY + 50;
-            if (port == 0) {
-                if (held.c.Z)       graphics_draw_text(disp, offsetX + 5, btnY, "Z (TRIGGER)");
-                if (held.c.L)       graphics_draw_text(disp, offsetX + 5, btnY + 10, "L (FLIPPER)");
-                if (held.c.R)       graphics_draw_text(disp, offsetX + 5, btnY + 20, "R (FLIPPER)");
-                
-                if (held.c.c_up || held.c.c_down || held.c.c_left || held.c.c_right) {
-                    graphics_draw_text(disp, offsetX + 80, btnY, "C-PAD");
-                }
-                if (held.c.up || held.c.down || held.c.left || held.c.right) {
-                    graphics_draw_text(disp, offsetX + 80, btnY + 10, "D-PAD");
-                }
+            if (cdata.c[0].Z)       graphics_draw_text(disp, offsetX + 5, btnY, "Z (TRIGGER)");
+            if (cdata.c[0].L)       graphics_draw_text(disp, offsetX + 5, btnY + 10, "L (FLIPPER)");
+            if (cdata.c[0].R)       graphics_draw_text(disp, offsetX + 5, btnY + 20, "R (FLIPPER)");
+            
+            if (cdata.c[0].c_up || cdata.c[0].c_down || cdata.c[0].c_left || cdata.c[0].c_right) {
+                graphics_draw_text(disp, offsetX + 80, btnY, "C-PAD");
+            }
+            if (cdata.c[0].up || cdata.c[0].down || cdata.c[0].left || cdata.c[0].right) {
+                graphics_draw_text(disp, offsetX + 80, btnY + 10, "D-PAD");
             }
         }
 
@@ -137,6 +141,7 @@ int main(void) {
         graphics_draw_text(disp, 15, 222, "START: Peak-Werte nullen");
         graphics_draw_text(disp, 15, 231, "L+R+Z+START: Zurueck zum Everdrive");
 
+        // NEU: Zeigt das fertig gezeichnete Bild auf dem Bildschirm an
         display_show(disp);
     }
 }
