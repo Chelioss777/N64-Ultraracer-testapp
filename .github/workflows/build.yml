@@ -8,18 +8,19 @@ on:
 jobs:
   build-rom:
     runs-on: ubuntu-latest
-    # Dieser Befehl zwingt die gesamte Cloud-Maschine, direkt im offiziellen Libdragon-System zu starten
-    container: ghcr.io/libdragon/libdragon:trunk
+    # Wir wechseln auf das aktive, funktionierende Community-Image der N64Brew-Organisation
+    container: ghcr.io/n64brew/ubuntu-toolchain:latest
 
     steps:
-    # 1. Quellcode aus deinem Repository in die Umgebung laden
+    # 1. Quellcode aus deinem Repository laden
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # 2. Das Makefile nativ im N64-System ausführen
-    - name: Build N64 ROM
+    # 2. Das Makefile im Container ausführen
+    # Wir übergeben den korrekten internen Pfad der Toolchain (/usr/local) an das System
+     Buchstabe  Build N64 ROM
       run: |
-        make
+        make N64_INST=/usr/local
         
     # 3. Das fertige ROM als Website-Download bereitstellen
     - name: Upload N64 ROM Artifact
